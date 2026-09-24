@@ -31,11 +31,13 @@ class GigaAMEngine: TranscriptionEngine {
         guard GigaAMModel.isSupported else { throw GigaAMModel.ModelError.unsupportedOS }
         guard GigaAMModel.isInstalled else { throw GigaAMModel.ModelError.notInstalled }
 
-        // CPU+GPU matches the PyTorch reference token-for-token; the Neural Engine
-        // occasionally flips borderline emissions. The per-step networks are tiny,
-        // so dispatching them anywhere but the CPU only adds latency.
+        // The Neural Engine keeps the ~420 MB of encoder weights out of the app's
+        // memory and is the fastest option; the first load compiles for the ANE once.
+        // (CPU+GPU is token-exact with the PyTorch reference; the ANE's fp16
+        // accumulation rarely flips a borderline emission.) The per-step networks
+        // are tiny, so dispatching them anywhere but the CPU only adds latency.
         let encoderConfiguration = MLModelConfiguration()
-        encoderConfiguration.computeUnits = .cpuAndGPU
+        encoderConfiguration.computeUnits = .cpuAndNeuralEngine
         let stepConfiguration = MLModelConfiguration()
         stepConfiguration.computeUnits = .cpuOnly
 
